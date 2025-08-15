@@ -8,6 +8,7 @@ import (
 )
 var db *sql.DB
 
+// Initializes the database connection
 func InitDB(connStr string) error {
 	var err error
 	db, err = sql.Open("postgres", connStr)
@@ -24,6 +25,7 @@ func InitDB(connStr string) error {
 	return nil
 }
 
+// Closes the database connection
 func CloseDB() error {
 	if db != nil {
 		return db.Close()
