@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -26,9 +27,9 @@ func InitDB(connStr string) error {
 }
 
 // Closes the database connection
-func CloseDB() error {
-	if db != nil {
-		return db.Close()
+func CloseDB() {
+	err := db.Close()
+	if err != nil {
+		log.Fatalf("could not close connection to database: %v", err)
 	}
-	return nil
 }

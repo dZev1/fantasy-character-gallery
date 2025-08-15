@@ -7,6 +7,7 @@ import (
 	"github.com/lpernett/godotenv"
 )
 
+// Fetches the connection string from .env file under parameter 'DATABASE_URL'
 func ConnStr() (string, error) {
 	err := godotenv.Load()
 	if err != nil {

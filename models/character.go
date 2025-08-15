@@ -3,7 +3,7 @@ package models
 import "fmt"
 
 type Character struct {
-	ID            uint           `json:"id"`
+	ID            uint64         `json:"id"`
 	Creator       string         `json:"creator"`
 	Name          string         `json:"name"`
 	BodyType      BodyType       `json:"body_type"`
