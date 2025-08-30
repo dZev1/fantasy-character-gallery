@@ -1,35 +1,35 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/glebarez/sqlite"
 )
-var db *sql.DB
 
-// Initializes the database connection
-func InitDB(connStr string) error {
+var db *sqlx.DB
+
+func InitDB() error {
 	var err error
-	db, err = sql.Open("postgres", connStr)
+	db, err = sqlx.Open("sqlite", "./database/mydb.sqlite")
 	if err != nil {
-		return fmt.Errorf("could not connect to database: %v", err)
+		return fmt.Errorf("could not establish connection to database: %v", err)
 	}
 
-	err = db.Ping()
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
 	if err != nil {
-		return fmt.Errorf("could not verify connection: %v", err)
+		return fmt.Errorf("could not enable foreign keys: %v", err)
 	}
 
-	fmt.Println("connection to database has been established")
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("could not ping database: %v", err)
+	}
+
+	log.Println("Database connection established")
 	return nil
 }
 
-// Closes the database connection
 func CloseDB() {
-	err := db.Close()
-	if err != nil {
-		log.Fatalf("could not close connection to database: %v", err)
-	}
+	db.Close()
 }

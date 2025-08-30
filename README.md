@@ -1,2 +1,3 @@
 # fantasy-character-gallery
-RPG character gallery API with stats and customization
+
+RPG character gallery API with stats and customization.

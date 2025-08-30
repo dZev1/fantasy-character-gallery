@@ -2,15 +2,16 @@ package models
 
 import "fmt"
 
+type ID uint64
+
 type Character struct {
-	ID            uint64         `json:"id"`
-	Creator       string         `json:"creator"`
-	Name          string         `json:"name"`
-	BodyType      BodyType       `json:"body_type"`
-	Species       Species        `json:"species"`
-	Class         Class          `json:"class"`
-	Stats         *Stats         `json:"stats"`
-	Customization *Customization `json:"customization"`
+	ID            ID   `db:"id"`
+	Name          string   `db:"name"`
+	BodyType      BodyType `db:"body_type"`
+	Species       Species  `db:"species"`
+	Class         Class    `db:"class"`
+	Stats         *Stats
+	Customization *Customization
 }
 
 func (char *Character) String() string {

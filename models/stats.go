@@ -3,12 +3,12 @@ package models
 import "fmt"
 
 type Stats struct {
-	Strength     uint8 `json:"strength"`
-	Dexterity    uint8 `json:"dexterity"`
-	Constitution uint8 `json:"constitution"`
-	Intelligence uint8 `json:"intelligence"`
-	Wisdom       uint8 `json:"wisdom"`
-	Charisma     uint8 `json:"charisma"`
+	Strength     uint8 `db:"strength"`
+	Dexterity    uint8 `db:"dexterity"`
+	Constitution uint8 `db:"constitution"`
+	Intelligence uint8 `db:"intelligence"`
+	Wisdom       uint8 `db:"wisdom"`
+	Charisma     uint8 `db:"charisma"`
 }
 
 func (s *Stats) String() string {
