@@ -31,5 +31,6 @@ func InitDB() error {
 }
 
 func CloseDB() {
+	log.Println("Database connection terminated")
 	db.Close()
 }

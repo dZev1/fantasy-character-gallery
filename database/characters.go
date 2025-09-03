@@ -78,9 +78,13 @@ func InsertCharacter(character *models.Character) error {
 	return nil
 }
 
+func GetCharacter() bool {
+	return true
+}
+
 func DeleteCharacter(charName string) error {
 	if !isCharInDB(charName) {
-		return fmt.Errorf("character %s does not exist in the database", charName)
+		return fmt.Errorf("character not found")
 	}
 
 	var charID, statsID, customizationID models.ID
