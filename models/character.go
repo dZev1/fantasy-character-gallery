@@ -2,18 +2,25 @@ package models
 
 import "fmt"
 
-type ID uint64
+const formatString = "\nName: %v\nSpecies: %v\nBody Type: %v\nClass: %v\n\n-STATS-\n%v\n\nCustomization: %v\n\n"
 
 type Character struct {
-	ID            ID   `db:"id"`
-	Name          string   `db:"name"`
-	BodyType      BodyType `db:"body_type"`
-	Species       Species  `db:"species"`
-	Class         Class    `db:"class"`
-	Stats         *Stats
-	Customization *Customization
+	ID            ID             `db:"id" json:"id"`
+	Name          string         `db:"name" json:"name"`
+	BodyType      BodyType       `db:"body_type" json:"body_type"`
+	Species       Species        `db:"species" json:"species"`
+	Class         Class          `db:"class" json:"class"`
+	Stats         *Stats         `json:"stats"`
+	Customization *Customization `json:"customization"`
 }
 
 func (char *Character) String() string {
-	return fmt.Sprintf("\nName: %v\nSpecies: %v\nBody Type: %v\nClass: %v\n\nStats\n%v", char.Name, char.Species, char.BodyType, char.Class, char.Stats.String())
+	return fmt.Sprintf(formatString,
+		char.Name,
+		char.Species,
+		char.BodyType,
+		char.Class,
+		char.Stats,
+		char.Customization,
+	)
 }

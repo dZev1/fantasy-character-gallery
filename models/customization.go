@@ -1,9 +1,22 @@
 package models
 
+import "fmt"
+
 type Customization struct {
-	Hair  uint8 `db:"hair"`
-	Face  uint8 `db:"face"`
-	Shirt uint8 `db:"shirt"`
-	Pants uint8 `db:"pants"`
-	Shoes uint8 `db:"shoes"`
+	ID    ID    `db:"id"    json:"id"`
+	Hair  uint8 `db:"hair"  json:"hair"`
+	Face  uint8 `db:"face"  json:"face"`
+	Shirt uint8 `db:"shirt" json:"shirt"`
+	Pants uint8 `db:"pants" json:"pants"`
+	Shoes uint8 `db:"shoes" json:"shoes"`
+}
+
+func (c *Customization) String() string {
+	return fmt.Sprintf("{ Hair: %v, Face: %v, Shirt: %v, Pants: %v, Shoes: %v }",
+		c.Hair,
+		c.Face,
+		c.Shirt,
+		c.Pants,
+		c.Shoes,
+	)
 }

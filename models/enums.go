@@ -56,3 +56,5 @@ const (
 func (bt BodyType) String() string {
 	return [...]string{"Type A", "Type B"}[bt]
 }
+
+type ID uint64
