@@ -32,5 +32,8 @@ func InitDB(connStr string) error {
 
 func CloseDB() {
 	log.Println("Database connection terminated")
-	db.Close()
+	err := db.Close()
+	if err != nil {
+		panic(err)
+	}
 }
