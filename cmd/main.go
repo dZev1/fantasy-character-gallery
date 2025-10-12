@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/dZev1/character-gallery/database"
+	"github.com/dZev1/character-gallery/internal/database"
 	"github.com/joho/godotenv"
 )
 

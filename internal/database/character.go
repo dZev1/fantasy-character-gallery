@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dZev1/character-gallery/models"
+	"github.com/dZev1/character-gallery/internal/models"
 	"github.com/jmoiron/sqlx"
 )
 
