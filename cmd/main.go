@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/dZev1/character-gallery/internal/database"
+	"github.com/dZev1/character-gallery/database"
 	"github.com/joho/godotenv"
 )
 
@@ -21,4 +21,8 @@ func main() {
 	}
 	defer database.CloseDB()
 
+	err = database.RemoveCharacterByID(2)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

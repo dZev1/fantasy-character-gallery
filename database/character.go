@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dZev1/character-gallery/internal/models"
+	"github.com/dZev1/character-gallery/models"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -13,6 +13,7 @@ import (
 var (
 	ErrCouldNotInsert = errors.New(`could not insert character`)
 	ErrCouldNotGet    = errors.New(`could not get character`)
+	ErrCouldNotFind   = errors.New(`could not find character`)
 )
 
 func InsertCharacter(character *models.Character) error {
@@ -151,7 +152,7 @@ func EditCharacter(character *models.Character) error {
 	`
 	_, err := db.NamedExec(query, character)
 	if err != nil {
-		return fmt.Errorf("character not found: %v", err)
+		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
 	return nil
 }
@@ -169,7 +170,7 @@ func EditCustomization(customization *models.Customization) error {
 
 	_, err := db.NamedExec(query, customization)
 	if err != nil {
-		return fmt.Errorf("character not found: %v", err)
+		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
 	return nil
 }
@@ -188,7 +189,21 @@ func EditStats(stats *models.Stats) error {
 
 	_, err := db.NamedExec(query, stats)
 	if err != nil {
-		return fmt.Errorf("character not found: %v", err)
+		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
+	return nil
+}
+
+func RemoveCharacterByID(id models.ID) error {
+	query := `
+		DELETE FROM characters
+		WHERE ID=$1
+	`
+
+	_, err := db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
+	}
+
 	return nil
 }
