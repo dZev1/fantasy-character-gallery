@@ -3,10 +3,8 @@ package database
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/dZev1/character-gallery/models"
-	"github.com/jmoiron/sqlx"
 )
 
 // Errors
@@ -16,48 +14,22 @@ var (
 	ErrCouldNotFind   = errors.New(`could not find character`)
 )
 
-func InsertCharacter(character *models.Character) error {
-	query := `
-		INSERT INTO characters (name, body_type, species, class)
-		VALUES (:name, :body_type, :species, :class) RETURNING id
-	`
-
-	stmt, err := db.PrepareNamed(query)
+func CreateCharacter(character *models.Character) error {
+	err := insertBaseCharacter(character)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
-	}
-
-	defer func(stmt *sqlx.NamedStmt) {
-		err = stmt.Close()
-		if err != nil {
-			log.Fatalf("%s: %v", ErrCouldNotInsert.Error(), err)
-		}
-	}(stmt)
-
-	err = stmt.Get(&character.ID, character)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+		return err
 	}
 
 	character.Stats.ID = character.ID
-
-	query = `
-		INSERT INTO stats (id, strength, dexterity, constitution, intelligence, wisdom, charisma)
-		VALUES(:id, :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma)
-	`
-	_, err = db.NamedExec(query, character.Stats)
+	err = insertStats(character.Stats)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+		return err
 	}
 
 	character.Customization.ID = character.ID
-	query = `
-		INSERT INTO customizations (id, hair, face, shirt, pants, shoes)
-		VALUES(:id, :hair, :face, :shirt, :pants, :shoes)
-	`
-	_, err = db.NamedExec(query, character.Customization)
+	err = insertCustomization(character.Customization)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+		return err
 	}
 
 	return nil
@@ -142,6 +114,30 @@ func GetCharacters() ([]models.Character, error) {
 }
 
 func EditCharacter(character *models.Character) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to initialize transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	err = UpdateBaseCharacter(character)
+	if err != nil {
+		return err
+	}
+
+	err = UpdateCustomization(character.Customization)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func UpdateBaseCharacter(character *models.Character) error {
 	query := `
 		UPDATE characters
 		SET name = :name,
@@ -157,7 +153,8 @@ func EditCharacter(character *models.Character) error {
 	return nil
 }
 
-func EditCustomization(customization *models.Customization) error {
+func UpdateCustomization(customization *models.Customization) error {
+
 	query := `
 		UPDATE customizations
 		SET hair = :hair,
@@ -172,10 +169,17 @@ func EditCustomization(customization *models.Customization) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
+
 	return nil
 }
 
-func EditStats(stats *models.Stats) error {
+func UpdateStats(stats *models.Stats) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to initialize transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query := `
 		UPDATE stats
 		SET strength = :strength,
@@ -187,22 +191,83 @@ func EditStats(stats *models.Stats) error {
 		WHERE id = :id
 	`
 
-	_, err := db.NamedExec(query, stats)
+	_, err = db.NamedExec(query, stats)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
 
 func RemoveCharacterByID(id models.ID) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to initialize transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query := `
 		DELETE FROM characters
 		WHERE ID=$1
 	`
 
-	_, err := db.Exec(query, id)
+	_, err = db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func insertCustomization(customization *models.Customization) error {
+	query := `
+		INSERT INTO customizations (id, hair, face, shirt, pants, shoes)
+		VALUES(:id, :hair, :face, :shirt, :pants, :shoes)
+	`
+	_, err := db.NamedExec(query, customization)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+	}
+	return nil
+}
+
+func insertStats(stats *models.Stats) error {
+	query := `
+		INSERT INTO stats (id, strength, dexterity, constitution, intelligence, wisdom, charisma)
+		VALUES(:id, :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma)
+	`
+
+	_, err := db.NamedExec(query, stats)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+	}
+
+	return nil
+}
+
+func insertBaseCharacter(character *models.Character) error {
+	query := `
+		INSERT INTO characters (name, body_type, species, class)
+		VALUES (:name, :body_type, :species, :class) RETURNING id
+	`
+
+	stmt, err := db.PrepareNamed(query)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+	}
+	defer stmt.Close()
+
+	err = stmt.Get(&character.ID, character)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
 	}
 
 	return nil

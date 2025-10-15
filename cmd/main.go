@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dZev1/character-gallery/database"
+	"github.com/dZev1/character-gallery/models"
 	"github.com/joho/godotenv"
 )
 
@@ -21,8 +22,27 @@ func main() {
 	}
 	defer database.CloseDB()
 
-	err = database.RemoveCharacterByID(2)
-	if err != nil {
-		log.Fatal(err.Error())
+	kaladin := &models.Character{
+		Name: "Kaladin",
+		BodyType: models.TypeA,
+		Species: models.Aasimar,
+		Class: models.Paladin,
+		Stats: &models.Stats{
+			Strength: 10,
+			Dexterity: 10,
+			Constitution: 10,
+			Intelligence: 10,
+			Wisdom: 10,
+			Charisma: 10,
+		},
+		Customization: &models.Customization{
+			Hair: 1,
+			Face: 2,
+			Shirt: 0,
+			Pants: 5,
+			Shoes: 9,
+		},
 	}
+
+	database.CreateCharacter(kaladin)
 }
