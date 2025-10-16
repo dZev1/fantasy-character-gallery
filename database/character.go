@@ -9,27 +9,59 @@ import (
 
 // Errors
 var (
-	ErrCouldNotInsert = errors.New(`could not insert character`)
-	ErrCouldNotGet    = errors.New(`could not get character`)
-	ErrCouldNotFind   = errors.New(`could not find character`)
+	ErrCouldNotInsert              = errors.New(`could not insert character`)
+	ErrCouldNotGet                 = errors.New(`could not get character`)
+	ErrCouldNotFind                = errors.New(`could not find character`)
+	ErrFailedInitializeTransaction = errors.New(`failed to initialize transaction`)
+	ErrFailCommitTransaction       = errors.New(`failed to commit transaction`)
 )
 
 func CreateCharacter(character *models.Character) error {
-	err := insertBaseCharacter(character)
+	tx, err := db.Beginx()
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrFailedInitializeTransaction, err)
+	}
+	defer tx.Rollback()
+
+	query := `
+		INSERT INTO characters (name, body_type, species, class)
+		VALUES (:name, :body_type, :species, :class) RETURNING id
+	`
+
+	stmt, err := db.PrepareNamed(query)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+	}
+	defer stmt.Close()
+
+	err = stmt.Get(&character.ID, character)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
 	}
 
 	character.Stats.ID = character.ID
-	err = insertStats(character.Stats)
+	query = `
+		INSERT INTO stats (id, strength, dexterity, constitution, intelligence, wisdom, charisma)
+		VALUES(:id, :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma)
+	`
+
+	_, err = db.NamedExec(query, character.Stats)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
 	}
 
 	character.Customization.ID = character.ID
-	err = insertCustomization(character.Customization)
+	query = `
+		INSERT INTO customizations (id, hair, face, shirt, pants, shoes)
+		VALUES(:id, :hair, :face, :shirt, :pants, :shoes)
+	`
+	_, err = db.NamedExec(query, character.Customization)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
 	}
 
 	return nil
@@ -90,7 +122,28 @@ func GetStatsByID(id models.ID) (*models.Stats, error) {
 func GetCharacters() ([]models.Character, error) {
 	var characters []models.Character
 	query := `
-		SELECT * FROM characters
+		SELECT
+			c.id, c.name, c.body_type, c.species, c.class,
+
+			COALESCE(s.strength, 0) AS "stats.strength",
+			COALESCE(s.dexterity, 0) AS "stats.dexterity",
+			COALESCE(s.constitution, 0) AS "stats.constitution",
+            COALESCE(s.intelligence, 0) AS "stats.intelligence",
+            COALESCE(s.wisdom, 0)       AS "stats.wisdom",
+            COALESCE(s.charisma, 0)     AS "stats.charisma",
+
+			COALESCE(cust.hair, 0)  AS "customization.hair",
+            COALESCE(cust.face, 0)  AS "customization.face",
+            COALESCE(cust.shirt, 0) AS "customization.shirt",
+            COALESCE(cust.pants, 0) AS "customization.pants",
+            COALESCE(cust.shoes, 0) AS "customization.shoes"
+
+			FROM
+            	characters c
+        	LEFT JOIN
+            	stats s ON c.id = s.id
+        	LEFT JOIN
+            	customizations cust ON c.id = cust.id
 	`
 
 	err := db.Select(&characters, query)
@@ -116,7 +169,7 @@ func GetCharacters() ([]models.Character, error) {
 func EditCharacter(character *models.Character) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to initialize transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrFailedInitializeTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -131,7 +184,7 @@ func EditCharacter(character *models.Character) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
 	}
 
 	return nil
@@ -176,7 +229,7 @@ func UpdateCustomization(customization *models.Customization) error {
 func UpdateStats(stats *models.Stats) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to initialize transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrFailedInitializeTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -197,7 +250,7 @@ func UpdateStats(stats *models.Stats) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
 	}
 
 	return nil
@@ -206,7 +259,7 @@ func UpdateStats(stats *models.Stats) error {
 func RemoveCharacterByID(id models.ID) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to initialize transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrFailedInitializeTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -221,53 +274,7 @@ func RemoveCharacterByID(id models.ID) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
-
-func insertCustomization(customization *models.Customization) error {
-	query := `
-		INSERT INTO customizations (id, hair, face, shirt, pants, shoes)
-		VALUES(:id, :hair, :face, :shirt, :pants, :shoes)
-	`
-	_, err := db.NamedExec(query, customization)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
-	}
-	return nil
-}
-
-func insertStats(stats *models.Stats) error {
-	query := `
-		INSERT INTO stats (id, strength, dexterity, constitution, intelligence, wisdom, charisma)
-		VALUES(:id, :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma)
-	`
-
-	_, err := db.NamedExec(query, stats)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
-	}
-
-	return nil
-}
-
-func insertBaseCharacter(character *models.Character) error {
-	query := `
-		INSERT INTO characters (name, body_type, species, class)
-		VALUES (:name, :body_type, :species, :class) RETURNING id
-	`
-
-	stmt, err := db.PrepareNamed(query)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
-	}
-	defer stmt.Close()
-
-	err = stmt.Get(&character.ID, character)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrCouldNotInsert, err)
+		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
 	}
 
 	return nil
