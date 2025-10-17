@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/dZev1/character-gallery/database"
-	"github.com/dZev1/character-gallery/models"
+	"github.com/dZev1/character-gallery/models/characters"
 )
 
 func CreateCharacter(w http.ResponseWriter, r *http.Request) {
-	newCharacter := &models.Character{}
+	newCharacter := &characters.Character{}
 
 	err := json.NewDecoder(r.Body).Decode(newCharacter)
 	if err != nil {
@@ -32,5 +32,5 @@ func CreateCharacter(w http.ResponseWriter, r *http.Request) {
 }
 
 func EditCharacter(w http.ResponseWriter, r *http.Request) {
-	
+
 }

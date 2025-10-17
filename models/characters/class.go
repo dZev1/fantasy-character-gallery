@@ -1,4 +1,4 @@
-package models
+package characters
 
 type Class uint8
 

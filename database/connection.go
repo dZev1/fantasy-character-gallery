@@ -5,35 +5,36 @@ import (
 	"log"
 	"os"
 
+	"github.com/dZev1/character-gallery/models/characters"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
-var db *sqlx.DB
-
-func InitDB(connStr string) error {
+func NewCharacterGallery(connStr string) (characters.CharacterGallery, error) {
 	var err error
-	db, err = sqlx.Connect("pgx", connStr)
+	db, err := sqlx.Connect("pgx", connStr)
 	if err != nil {
-		return fmt.Errorf("could not establish connection to database: %v", err)
+		return nil, fmt.Errorf("could not establish connection to database: %v", err)
 	}
 
 	log.Println("Database connection established")
 
 	schema, err := os.ReadFile("./schema.sql")
 	if err != nil {
-		return fmt.Errorf("could not load schema: %v", err)
+		return nil, fmt.Errorf("could not load schema: %v", err)
 	}
 
 	db.MustExec(string(schema))
 
-	return nil
+	return &PostgresCharacterGallery{
+		db: db,
+	}, nil
 }
 
-func CloseDB() {
+func (cg *PostgresCharacterGallery) Close() {
 	log.Println("Database connection terminated")
-	err := db.Close()
+	err := cg.db.Close()
 	if err != nil {
-		panic(err)
+		log.Printf("error closing database connection: %v\n", err)
 	}
 }

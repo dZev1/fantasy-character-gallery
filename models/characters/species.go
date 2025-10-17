@@ -1,4 +1,4 @@
-package models
+package characters
 
 type Species uint8
 

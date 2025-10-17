@@ -16,12 +16,15 @@ func main() {
 	}
 	connStr := os.Getenv("DATABASE_URL")
 
-	err = database.InitDB(connStr)
+	gallery, err := database.NewCharacterGallery(connStr)
 	if err != nil {
 		panic(err)
 	}
-	defer database.CloseDB()
 
-	chars, _ := database.GetCharacters()
+	if g, ok := gallery.(*database.PostgresCharacterGallery); ok {
+		defer g.Close()
+	}
+
+	chars, _ := gallery.GetAll()
 	fmt.Println(chars)
 }
