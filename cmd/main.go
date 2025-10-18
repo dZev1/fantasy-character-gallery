@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/dZev1/character-gallery/database"
+	"github.com/dZev1/character-gallery/handlers"
 	"github.com/joho/godotenv"
 )
 
@@ -25,6 +26,18 @@ func main() {
 		defer g.Close()
 	}
 
-	chars, _ := gallery.GetAll()
-	fmt.Println(chars)
+	handler := &handlers.CharacterHandler{
+		Gallery: gallery,
+	}
+
+	http.HandleFunc("POST /characters", handler.CreateCharacter)
+	http.HandleFunc("GET /characters", handler.GetAllCharacters)
+	http.HandleFunc("GET /characters/{id}", handler.GetCharacter)
+	http.HandleFunc("PUT /characters/{id}", handler.EditCharacter)
+	http.HandleFunc("DELETE /characters/{id}", handler.DeleteCharacter)
+
+	log.Println("Server listening on http://localhost:8080")
+	if err = http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Could not start server: %v", err)
+	}
 }

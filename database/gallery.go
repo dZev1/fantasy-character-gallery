@@ -14,7 +14,7 @@ var (
 	ErrCouldNotGet                 = errors.New(`could not get character`)
 	ErrCouldNotFind                = errors.New(`could not find character`)
 	ErrFailedInitializeTransaction = errors.New(`failed to initialize transaction`)
-	ErrFailCommitTransaction       = errors.New(`failed to commit transaction`)
+	ErrFailedCommitTransaction     = errors.New(`failed to commit transaction`)
 )
 
 type PostgresCharacterGallery struct {
@@ -46,7 +46,7 @@ func (cg *PostgresCharacterGallery) Create(character *characters.Character) erro
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
+		return fmt.Errorf("%w: %w", ErrFailedCommitTransaction, err)
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func (cg *PostgresCharacterGallery) Edit(character *characters.Character) error 
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
+		return fmt.Errorf("%w: %w", ErrFailedCommitTransaction, err)
 	}
 
 	return nil
@@ -147,13 +147,22 @@ func (cg *PostgresCharacterGallery) Remove(id characters.ID) error {
 		WHERE ID=$1
 	`
 
-	_, err = tx.Exec(query, id)
+	result, err := tx.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCouldNotFind, err)
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("could not verify rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return ErrCouldNotFind
+	}
+
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("%w: %w", ErrFailCommitTransaction, err)
+		return fmt.Errorf("%w: %w", ErrFailedCommitTransaction, err)
 	}
 
 	return nil

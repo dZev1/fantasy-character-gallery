@@ -3,13 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/dZev1/character-gallery/database"
 	"github.com/dZev1/character-gallery/models/characters"
 )
 
-func CreateCharacter(w http.ResponseWriter, r *http.Request) {
+type CharacterHandler struct {
+	Gallery characters.CharacterGallery
+}
+
+func (h *CharacterHandler) CreateCharacter(w http.ResponseWriter, r *http.Request) {
 	newCharacter := &characters.Character{}
 
 	err := json.NewDecoder(r.Body).Decode(newCharacter)
@@ -20,7 +24,7 @@ func CreateCharacter(w http.ResponseWriter, r *http.Request) {
 
 	newCharacter.Name = strings.ToLower(newCharacter.Name)
 
-	err = database.CreateCharacter(newCharacter)
+	err = h.Gallery.Create(newCharacter)
 	if err != nil {
 		http.Error(w, "Could not create character", http.StatusInternalServerError)
 		return
@@ -31,6 +35,84 @@ func CreateCharacter(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(*newCharacter)
 }
 
-func EditCharacter(w http.ResponseWriter, r *http.Request) {
+func (h *CharacterHandler) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
+	chars, err := h.Gallery.GetAll()
 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusFailedDependency)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(chars)
+}
+
+func (h *CharacterHandler) GetCharacter(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	character, err := h.Gallery.Get(characters.ID(id))
+	if err != nil {
+		http.Error(w, "Character not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(character)
+}
+
+func (h *CharacterHandler) EditCharacter(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	characterToEdit := &characters.Character{}
+	err = json.NewDecoder(r.Body).Decode(characterToEdit)
+	if err != nil {
+		http.Error(w, "Invalid Request Body", http.StatusBadRequest)
+		return
+	}
+
+	characterToEdit.ID = characters.ID(id)
+	characterToEdit.Stats.ID = characters.ID(id)
+	characterToEdit.Customization.ID = characters.ID(id)
+
+	err = h.Gallery.Edit(characterToEdit)
+	if err != nil {
+		http.Error(w, "Could not edit character", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(characterToEdit)
+}
+
+func (h *CharacterHandler) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Gallery.Remove(characters.ID(id))
+	if err != nil {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }
