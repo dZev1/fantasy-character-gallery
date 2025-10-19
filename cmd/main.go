@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dZev1/character-gallery/database"
+	"github.com/dZev1/character-gallery/internal/database"
 	"github.com/dZev1/character-gallery/handlers"
 	"github.com/joho/godotenv"
 )

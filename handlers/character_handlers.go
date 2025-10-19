@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/dZev1/character-gallery/models/characters"
 )
@@ -21,8 +20,6 @@ func (h *CharacterHandler) CreateCharacter(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	newCharacter.Name = strings.ToLower(newCharacter.Name)
 
 	err = h.Gallery.Create(newCharacter)
 	if err != nil {
